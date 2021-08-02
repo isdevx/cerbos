@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/credentials/local"
 
 	svcv1 "github.com/cerbos/cerbos/api/genpb/cerbos/svc/v1"
+	"github.com/cerbos/cerbos/client"
 	"github.com/cerbos/cerbos/cmd/ctl/audit"
 	"github.com/cerbos/cerbos/cmd/ctl/decisions"
 	"github.com/cerbos/cerbos/internal/util"
@@ -86,7 +87,7 @@ func NewCommand() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&connConf.insecure, "insecure", false, "Skip validating server certificate")
 	cmd.PersistentFlags().BoolVar(&connConf.plaintext, "plaintext", false, "Use plaintext protocol without TLS")
 
-	cmd.AddCommand(audit.NewAuditCmd(createAdminClient), decisions.NewDecisionsCmd(createAdminClient))
+	cmd.AddCommand(audit.NewAuditCmd(withAdminClient), decisions.NewDecisionsCmd(createAdminClient))
 
 	return cmd
 }
@@ -207,4 +208,34 @@ func (ac basicAuthCredentials) GetRequestMetadata(ctx context.Context, in ...str
 
 func (basicAuthCredentials) RequireTransportSecurity() bool {
 	return false
+}
+
+func withAdminClient(fn func(c client.AdminClient, cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if connConf.username == "" || connConf.password == "" {
+			return errInvalidCredentials
+		}
+
+		opts := make([]client.Opt, 0)
+		if ok, _ := cmd.Flags().GetBool("plaintext"); ok {
+			opts = append(opts, client.WithPlaintext())
+		}
+		if ok, _ := cmd.Flags().GetBool("insecure"); ok {
+			opts = append(opts, client.WithTLSInsecure())
+		}
+		if cert, _ := cmd.Flags().GetString("ca-cert"); cert != "" {
+			opts = append(opts, client.WithTLSCACert(cert))
+		}
+		if cert, _ := cmd.Flags().GetString("client-cert"); cert != "" {
+			key, _ := cmd.Flags().GetString("ca-key")
+			opts = append(opts, client.WithTLSClientCert(cert, key))
+		}
+
+		ac, err := client.NewAdminClientWithCredentials(connConf.serverAddr, connConf.username, connConf.password, opts...)
+		if err != nil {
+			return fmt.Errorf("could not create admin client: %w", err)
+		}
+
+		return fn(ac, cmd, args)
+	}
 }
