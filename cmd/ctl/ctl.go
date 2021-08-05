@@ -217,18 +217,17 @@ func withAdminClient(fn func(c client.AdminClient, cmd *cobra.Command, args []st
 		}
 
 		opts := make([]client.Opt, 0)
-		if ok, _ := cmd.Flags().GetBool("plaintext"); ok {
+		if connConf.plaintext {
 			opts = append(opts, client.WithPlaintext())
 		}
-		if ok, _ := cmd.Flags().GetBool("insecure"); ok {
+		if connConf.insecure {
 			opts = append(opts, client.WithTLSInsecure())
 		}
-		if cert, _ := cmd.Flags().GetString("ca-cert"); cert != "" {
+		if cert := connConf.caCert; cert != "" {
 			opts = append(opts, client.WithTLSCACert(cert))
 		}
-		if cert, _ := cmd.Flags().GetString("client-cert"); cert != "" {
-			key, _ := cmd.Flags().GetString("ca-key")
-			opts = append(opts, client.WithTLSClientCert(cert, key))
+		if cert := connConf.tlsClientCert; cert != "" {
+			opts = append(opts, client.WithTLSClientCert(cert, connConf.tlsClientKey))
 		}
 
 		ac, err := client.NewAdminClientWithCredentials(connConf.serverAddr, connConf.username, connConf.password, opts...)
