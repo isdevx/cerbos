@@ -22,10 +22,16 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
+            ~/.cache/cerbos/bin
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
 
       - name: Run benchmark
-        run:  go mod tidy -compat=1.17 && go test -tags tests -bench 'Benchmark' ./... | tee benchmark.txt
+        run:  go mod tidy -compat=1.17 && go test -tags tests -bench 'Benchmark' ./... | tee benchmark.raw
+
+      - name: Fix benchmark names
+        run: >-
+          perl -pe 's/^(Benchmark.+?)\/(\S+)(-\d+)(\s+)/\1__\2\4/' benchmark.raw |
+          tr '=-' '_' | tee benchmark.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
