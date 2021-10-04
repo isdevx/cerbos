@@ -13,6 +13,7 @@ import (
 
 	effectv1 "github.com/cerbos/cerbos/api/genpb/cerbos/effect/v1"
 	policyv1 "github.com/cerbos/cerbos/api/genpb/cerbos/policy/v1"
+	"github.com/cerbos/cerbos/internal/conditions"
 	"github.com/cerbos/cerbos/internal/namer"
 )
 
@@ -59,7 +60,8 @@ type RegoGen struct {
 	packageName string
 	*strings.Builder
 	condCount  uint
-	conditions map[string]*CELCondition
+	conditions map[string]*conditions.CELCondition
+	globals    map[string]string // CEL variables
 }
 
 func NewRegoGen(packageName string, imports ...string) *RegoGen {
@@ -69,11 +71,19 @@ func NewRegoGen(packageName string, imports ...string) *RegoGen {
 	}
 
 	rg.line("package ", packageName)
-	for _, imp := range imports {
-		rg.line("import ", imp)
+	if len(imports) > 0 {
+		rg.line(derivedRolesMap, "=", mergeDerivedRoles(imports))
 	}
 
 	return rg
+}
+
+func mergeDerivedRoles(imports []string) string {
+	if len(imports) == 1 {
+		return imports[0]
+	}
+
+	return fmt.Sprintf("object.union(%s, %s)", imports[0], mergeDerivedRoles(imports[1:]))
 }
 
 func (rg *RegoGen) line(ss ...string) {
@@ -164,7 +174,7 @@ func (rg *RegoGen) AddResourceRule(rule *policyv1.ResourceRule) error {
 	case numDerivedRoles > 0:
 		return rg.doAddResourceRule(rule, func() { rg.addDerivedRolesCheck(rule.DerivedRoles) })
 	default:
-		return fmt.Errorf("action [%s] does not define any roles or derivedRoles to match: %w", strings.Join(rule.Actions, "|"), ErrCodeGenFailure)
+		return fmt.Errorf("at least one role or derived role must be specified: %w", ErrCodeGenFailure)
 	}
 }
 
@@ -172,7 +182,7 @@ func (rg *RegoGen) doAddResourceRule(rule *policyv1.ResourceRule, membershipFn f
 	rg.addEffectRuleHead(rule.Effect)
 	rg.addActionsListMatch(rule.Actions)
 	membershipFn()
-	if err := rg.addCondition(fmt.Sprintf("Action [%s]", strings.Join(rule.Actions, "|")), rule.Condition); err != nil {
+	if err := rg.addCondition(rule.Name, rule.Condition); err != nil {
 		return err
 	}
 
@@ -212,12 +222,16 @@ func (rg *RegoGen) addRolesCheck(roles []string) {
 }
 
 func (rg *RegoGen) AddPrincipalRule(rule *policyv1.PrincipalRule) error {
-	for _, action := range rule.Actions {
+	for i, action := range rule.Actions {
+		if action.Name == "" {
+			action.Name = fmt.Sprintf("%s-rule-%03d", rule.Resource, i+1)
+		}
+
 		rg.addEffectRuleHead(action.Effect)
 		rg.addResourceMatch(rule.Resource)
 		rg.addActionMatch(action.Action)
-		if err := rg.addCondition(fmt.Sprintf("Action [%s]", action.Action), action.Condition); err != nil {
-			return err
+		if err := rg.addCondition(action.Name, action.Condition); err != nil {
+			return fmt.Errorf("failed to generate code for condition block of '%s': %w", action.Name, err)
 		}
 
 		rg.line("}")
@@ -308,7 +322,7 @@ func (rg *RegoGen) addMatch(parent string, m *policyv1.Match) error {
 	rg.condCount++
 
 	if rg.conditions == nil {
-		rg.conditions = make(map[string]*CELCondition)
+		rg.conditions = make(map[string]*conditions.CELCondition)
 	}
 
 	rg.conditions[conditionKey] = cond
@@ -331,4 +345,8 @@ func (rg *RegoGen) addEffectStringFunc(defaultEffect string) {
 	rg.line(`cerbos_effect := `, effectForIdent, `(`, actionVar, `)`)
 	rg.line(`} else = `, defaultEffect)
 	rg.line()
+}
+
+func (rg *RegoGen) AddGlobals(globals map[string]string) {
+	rg.globals = globals
 }

@@ -29,6 +29,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/admin"
@@ -93,7 +95,7 @@ func Start(ctx context.Context, zpagesEnabled bool) error {
 	// get configuration
 	conf := &Conf{}
 	if err := config.GetSection(conf); err != nil {
-		return err
+		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	// create audit log
@@ -154,17 +156,13 @@ func (s *Server) Start(ctx context.Context, store storage.Store, eng *engine.Eng
 		s.ocExporter = ocExporter
 	}
 
-	// It would be nice to have a single port to serve both gRPC and HTTP from. Unfortunately, cmux
+	// It would be nice to have a single port to serve both gRPC and HTTP. Unfortunately, cmux
 	// can't deal effectively with both gRPC and HTTP/2 when TLS is enabled (see https://github.com/soheilhy/cmux/issues/68).
-	// One way to handle that would be to use the `ServeHTTP` method of gRPC to serve gRPC from the HTTP server.
-	// However, when TLS is disabled, that won't work either because Go's HTTP/2 server does not support h2c (plaintext).
-	// Another potential issue with single-port gRPC and HTTP/2 is when a proxy like Envoy is in front of the server, it
+	// Another potential issue with single-port gRPC and HTTP/2 is when a proxy like Envoy is in front of the server it
 	// would have a connection pool per port and would end up sending HTTP/2 traffic to gRPC and vice-versa.
-	// So, we have two dedicated ports for HTTP and gRPC traffic. However, if TLS is enabled, you can send gRPC to the
-	// HTTP port as well and it would work. I think that's an acceptable compromise given that we expect TLS to be
-	// enabled in all production settings.
+	// This is why we have two dedicated ports for HTTP and gRPC traffic. However, if gRPC traffic is sent to the HTTP port, it
+	// will still be handled correctly.
 
-	// create listeners
 	grpcL, err := s.createListener(s.conf.GRPCListenAddr)
 	if err != nil {
 		log.Error("Failed to create gRPC listener", zap.Error(err))
@@ -421,7 +419,7 @@ func (s *Server) startHTTPServer(ctx context.Context, l net.Listener, grpcSrv *g
 
 	h := &http.Server{
 		ErrorLog:          zap.NewStdLog(zap.L().Named("http.error")),
-		Handler:           httpHandler,
+		Handler:           h2c.NewHandler(httpHandler, &http2.Server{}),
 		ReadHeaderTimeout: defaultTimeout,
 		ReadTimeout:       defaultTimeout,
 		WriteTimeout:      defaultTimeout,

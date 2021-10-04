@@ -100,6 +100,24 @@ func local_request_CerbosService_CheckResourceBatch_0(ctx context.Context, marsh
 
 }
 
+func request_CerbosService_ServerInfo_0(ctx context.Context, marshaler runtime.Marshaler, client CerbosServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq requestv1.ServerInfoRequest
+	var metadata runtime.ServerMetadata
+
+	msg, err := client.ServerInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_CerbosService_ServerInfo_0(ctx context.Context, marshaler runtime.Marshaler, server CerbosServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq requestv1.ServerInfoRequest
+	var metadata runtime.ServerMetadata
+
+	msg, err := server.ServerInfo(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
 func request_CerbosAdminService_AddOrUpdatePolicy_0(ctx context.Context, marshaler runtime.Marshaler, client CerbosAdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq requestv1.AddOrUpdatePolicyRequest
 	var metadata runtime.ServerMetadata
@@ -216,6 +234,42 @@ func request_CerbosAdminService_ListAuditLogEntries_0(ctx context.Context, marsh
 
 }
 
+var (
+	filter_CerbosAdminService_ListPolicies_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
+func request_CerbosAdminService_ListPolicies_0(ctx context.Context, marshaler runtime.Marshaler, client CerbosAdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq requestv1.ListPoliciesRequest
+	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CerbosAdminService_ListPolicies_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.ListPolicies(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_CerbosAdminService_ListPolicies_0(ctx context.Context, marshaler runtime.Marshaler, server CerbosAdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq requestv1.ListPoliciesRequest
+	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CerbosAdminService_ListPolicies_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.ListPolicies(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
 func request_CerbosPlaygroundService_PlaygroundValidate_0(ctx context.Context, marshaler runtime.Marshaler, client CerbosPlaygroundServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq requestv1.PlaygroundValidateRequest
 	var metadata runtime.ServerMetadata
@@ -284,6 +338,40 @@ func local_request_CerbosPlaygroundService_PlaygroundEvaluate_0(ctx context.Cont
 
 }
 
+func request_CerbosPlaygroundService_PlaygroundProxy_0(ctx context.Context, marshaler runtime.Marshaler, client CerbosPlaygroundServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq requestv1.PlaygroundProxyRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.PlaygroundProxy(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_CerbosPlaygroundService_PlaygroundProxy_0(ctx context.Context, marshaler runtime.Marshaler, server CerbosPlaygroundServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq requestv1.PlaygroundProxyRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.PlaygroundProxy(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
 // RegisterCerbosServiceHandlerServer registers the http handlers for service CerbosService to "mux".
 // UnaryRPC     :call CerbosServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -333,6 +421,29 @@ func RegisterCerbosServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		}
 
 		forward_CerbosService_CheckResourceBatch_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_CerbosService_ServerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/cerbos.svc.v1.CerbosService/ServerInfo", runtime.WithHTTPPathPattern("/api/server_info"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_CerbosService_ServerInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CerbosService_ServerInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -398,6 +509,29 @@ func RegisterCerbosAdminServiceHandlerServer(ctx context.Context, mux *runtime.S
 		return
 	})
 
+	mux.Handle("GET", pattern_CerbosAdminService_ListPolicies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/cerbos.svc.v1.CerbosAdminService/ListPolicies", runtime.WithHTTPPathPattern("/admin/policy/list"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_CerbosAdminService_ListPolicies_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CerbosAdminService_ListPolicies_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -450,6 +584,29 @@ func RegisterCerbosPlaygroundServiceHandlerServer(ctx context.Context, mux *runt
 		}
 
 		forward_CerbosPlaygroundService_PlaygroundEvaluate_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_CerbosPlaygroundService_PlaygroundProxy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/cerbos.svc.v1.CerbosPlaygroundService/PlaygroundProxy", runtime.WithHTTPPathPattern("/api/playground/proxy"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_CerbosPlaygroundService_PlaygroundProxy_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CerbosPlaygroundService_PlaygroundProxy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -534,6 +691,26 @@ func RegisterCerbosServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
+	mux.Handle("GET", pattern_CerbosService_ServerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/cerbos.svc.v1.CerbosService/ServerInfo", runtime.WithHTTPPathPattern("/api/server_info"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_CerbosService_ServerInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CerbosService_ServerInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -541,12 +718,16 @@ var (
 	pattern_CerbosService_CheckResourceSet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "check"}, ""))
 
 	pattern_CerbosService_CheckResourceBatch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "check_resource_batch"}, ""))
+
+	pattern_CerbosService_ServerInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "server_info"}, ""))
 )
 
 var (
 	forward_CerbosService_CheckResourceSet_0 = runtime.ForwardResponseMessage
 
 	forward_CerbosService_CheckResourceBatch_0 = runtime.ForwardResponseMessage
+
+	forward_CerbosService_ServerInfo_0 = runtime.ForwardResponseMessage
 )
 
 // RegisterCerbosAdminServiceHandlerFromEndpoint is same as RegisterCerbosAdminServiceHandler but
@@ -647,6 +828,26 @@ func RegisterCerbosAdminServiceHandlerClient(ctx context.Context, mux *runtime.S
 
 	})
 
+	mux.Handle("GET", pattern_CerbosAdminService_ListPolicies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/cerbos.svc.v1.CerbosAdminService/ListPolicies", runtime.WithHTTPPathPattern("/admin/policy/list"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_CerbosAdminService_ListPolicies_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CerbosAdminService_ListPolicies_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -656,6 +857,8 @@ var (
 	pattern_CerbosAdminService_AddOrUpdatePolicy_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"admin", "policy"}, ""))
 
 	pattern_CerbosAdminService_ListAuditLogEntries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"admin", "auditlog", "list", "kind"}, ""))
+
+	pattern_CerbosAdminService_ListPolicies_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"admin", "policy", "list"}, ""))
 )
 
 var (
@@ -664,6 +867,8 @@ var (
 	forward_CerbosAdminService_AddOrUpdatePolicy_1 = runtime.ForwardResponseMessage
 
 	forward_CerbosAdminService_ListAuditLogEntries_0 = runtime.ForwardResponseStream
+
+	forward_CerbosAdminService_ListPolicies_0 = runtime.ForwardResponseMessage
 )
 
 // RegisterCerbosPlaygroundServiceHandlerFromEndpoint is same as RegisterCerbosPlaygroundServiceHandler but
@@ -744,6 +949,26 @@ func RegisterCerbosPlaygroundServiceHandlerClient(ctx context.Context, mux *runt
 
 	})
 
+	mux.Handle("POST", pattern_CerbosPlaygroundService_PlaygroundProxy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/cerbos.svc.v1.CerbosPlaygroundService/PlaygroundProxy", runtime.WithHTTPPathPattern("/api/playground/proxy"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_CerbosPlaygroundService_PlaygroundProxy_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CerbosPlaygroundService_PlaygroundProxy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -751,10 +976,14 @@ var (
 	pattern_CerbosPlaygroundService_PlaygroundValidate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "playground", "validate"}, ""))
 
 	pattern_CerbosPlaygroundService_PlaygroundEvaluate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "playground", "evaluate"}, ""))
+
+	pattern_CerbosPlaygroundService_PlaygroundProxy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "playground", "proxy"}, ""))
 )
 
 var (
 	forward_CerbosPlaygroundService_PlaygroundValidate_0 = runtime.ForwardResponseMessage
 
 	forward_CerbosPlaygroundService_PlaygroundEvaluate_0 = runtime.ForwardResponseMessage
+
+	forward_CerbosPlaygroundService_PlaygroundProxy_0 = runtime.ForwardResponseMessage
 )

@@ -12,4 +12,5 @@ hack/dev/tls.key
 # Editor files
 .vscode
 
+# macOS files
 .DS_Store

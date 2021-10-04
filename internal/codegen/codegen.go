@@ -14,6 +14,7 @@ import (
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
 	policyv1 "github.com/cerbos/cerbos/api/genpb/cerbos/policy/v1"
+	"github.com/cerbos/cerbos/internal/conditions"
 	"github.com/cerbos/cerbos/internal/namer"
 	"github.com/cerbos/cerbos/internal/policy"
 )
@@ -61,9 +62,16 @@ func generateResourcePolicy(parent *policyv1.Policy, p *policyv1.ResourcePolicy)
 
 	rg := NewRegoGen(modName, imports...)
 
+	if len(parent.Globals) > 0 {
+		rg.AddGlobals(parent.Globals)
+	}
 	for i, rule := range p.Rules {
+		if rule.Name == "" {
+			rule.Name = fmt.Sprintf("rule-%03d", i+1)
+		}
+
 		if err := rg.AddResourceRule(rule); err != nil {
-			return nil, newRuleGenErr(parent, i+1, err)
+			return nil, newResourceRuleGenErr(parent, i+1, rule.Name, err)
 		}
 	}
 
@@ -96,7 +104,7 @@ func generatePrincipalPolicy(parent *policyv1.Policy, p *policyv1.PrincipalPolic
 
 	for i, rule := range p.Rules {
 		if err := rg.AddPrincipalRule(rule); err != nil {
-			return nil, newRuleGenErr(parent, i+1, err)
+			return nil, newPrincipalRuleGenErr(parent, i+1, rule.Resource, err)
 		}
 	}
 
@@ -122,7 +130,7 @@ type Result struct {
 	ModName    string
 	ModID      namer.ModuleID
 	Module     *ast.Module
-	Conditions map[string]*CELCondition
+	Conditions map[string]*conditions.CELCondition
 }
 
 func (cgr *Result) ToRepr() (*policyv1.GeneratedPolicy, error) {
@@ -164,7 +172,7 @@ func ResultFromRepr(repr *policyv1.GeneratedPolicy) (*Result, error) {
 	r.Module = m
 
 	if len(repr.CelConditions) > 0 {
-		r.Conditions = make(map[string]*CELCondition, len(repr.CelConditions))
+		r.Conditions = make(map[string]*conditions.CELCondition, len(repr.CelConditions))
 		for k, expr := range repr.CelConditions {
 			r.Conditions[k] = CELConditionFromCheckedExpr(expr)
 		}
@@ -208,7 +216,12 @@ func newErr(file, desc string, err error) Error {
 	return Error{File: file, Description: desc, Err: err}
 }
 
-func newRuleGenErr(p *policyv1.Policy, ruleNum int, err error) Error {
+func newResourceRuleGenErr(p *policyv1.Policy, ruleNum int, ruleName string, err error) Error {
 	file := policy.GetSourceFile(p)
-	return newErr(file, fmt.Sprintf("Failed to generate code for rule #%d", ruleNum), err)
+	return newErr(file, fmt.Sprintf("Failed to generate code for rule '%s' (#%d)", ruleName, ruleNum), err)
+}
+
+func newPrincipalRuleGenErr(p *policyv1.Policy, ruleNum int, resourceName string, err error) Error {
+	file := policy.GetSourceFile(p)
+	return newErr(file, fmt.Sprintf("Failed to generate code for rule associated with resource '%s' (#%d)", resourceName, ruleNum), err)
 }

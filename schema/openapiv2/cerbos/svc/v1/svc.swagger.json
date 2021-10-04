@@ -195,6 +195,62 @@
         ]
       }
     },
+    "/admin/policy/list": {
+      "get": {
+        "summary": "List policies",
+        "operationId": "CerbosAdminService_ListPolicies",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sortOptions.column",
+            "description": "Sort column",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COLUMN_UNSPECIFIED",
+              "COLUMN_NAME",
+              "COLUMN_VERSION"
+            ],
+            "default": "COLUMN_UNSPECIFIED"
+          },
+          {
+            "name": "sortOptions.order",
+            "description": "Sort order",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "ORDER_UNSPECIFIED",
+              "ORDER_ASCENDING",
+              "ORDER_DESCENDING"
+            ],
+            "default": "ORDER_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "CerbosAdminService"
+        ],
+        "security": [
+          {
+            "BasicAuth": []
+          }
+        ]
+      }
+    },
     "/api/check": {
       "post": {
         "summary": "Check",
@@ -295,6 +351,38 @@
         ]
       }
     },
+    "/api/playground/proxy": {
+      "post": {
+        "operationId": "CerbosPlaygroundService_PlaygroundProxy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PlaygroundProxyResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1PlaygroundProxyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CerbosPlaygroundService"
+        ]
+      }
+    },
     "/api/playground/validate": {
       "post": {
         "operationId": "CerbosPlaygroundService_PlaygroundValidate",
@@ -324,6 +412,30 @@
         ],
         "tags": [
           "CerbosPlaygroundService"
+        ]
+      }
+    },
+    "/api/server_info": {
+      "get": {
+        "summary": "Get server information",
+        "description": "Get information about the server e.g. server version",
+        "operationId": "CerbosService_ServerInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ServerInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "CerbosService"
         ]
       }
     }
@@ -443,6 +555,58 @@
         "end"
       ]
     },
+    "ListPoliciesRequestFilter": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/ListPoliciesRequestMatchType",
+          "enum": [
+            "MATCH_TYPE_EXACT",
+            "MATCH_TYPE_WILDCARD"
+          ],
+          "description": "Kind of filter"
+        },
+        "fieldPath": {
+          "type": "string",
+          "example": "$.resourcePolicy.resource",
+          "description": "JSONPath expression describing the field to match"
+        },
+        "value": {
+          "type": "string",
+          "description": "The value to compare"
+        }
+      }
+    },
+    "ListPoliciesRequestMatchType": {
+      "type": "string",
+      "enum": [
+        "MATCH_TYPE_UNSPECIFIED",
+        "MATCH_TYPE_EXACT",
+        "MATCH_TYPE_WILDCARD"
+      ],
+      "default": "MATCH_TYPE_UNSPECIFIED"
+    },
+    "ListPoliciesRequestSortOptions": {
+      "type": "object",
+      "properties": {
+        "column": {
+          "$ref": "#/definitions/SortOptionsColumn",
+          "enum": [
+            "COLUMN_NAME",
+            "COLUMN_VERSION"
+          ],
+          "description": "Sort column"
+        },
+        "order": {
+          "$ref": "#/definitions/SortOptionsOrder",
+          "enum": [
+            "ORDER_ASCENDING",
+            "ORDER_DESCENDING"
+          ],
+          "description": "Sort order"
+        }
+      }
+    },
     "MatchExprList": {
       "type": "object",
       "properties": {
@@ -549,8 +713,55 @@
         },
         "effect": {
           "$ref": "#/definitions/v1Effect"
+        },
+        "name": {
+          "type": "string"
         }
       }
+    },
+    "SortOptionsColumn": {
+      "type": "string",
+      "enum": [
+        "COLUMN_UNSPECIFIED",
+        "COLUMN_NAME",
+        "COLUMN_VERSION"
+      ],
+      "default": "COLUMN_UNSPECIFIED"
+    },
+    "SortOptionsOrder": {
+      "type": "string",
+      "enum": [
+        "ORDER_UNSPECIFIED",
+        "ORDER_ASCENDING",
+        "ORDER_DESCENDING"
+      ],
+      "default": "ORDER_UNSPECIFIED"
+    },
+    "enginev1CheckInput": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "resource": {
+          "$ref": "#/definitions/v1Resource"
+        },
+        "principal": {
+          "$ref": "#/definitions/v1Principal"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "required": [
+            "actions"
+          ]
+        }
+      },
+      "required": [
+        "actions"
+      ]
     },
     "protobufAny": {
       "type": "object",
@@ -660,32 +871,6 @@
         }
       },
       "description": "Unique identifier for the resource instance."
-    },
-    "v1CheckInput": {
-      "type": "object",
-      "properties": {
-        "requestId": {
-          "type": "string"
-        },
-        "resource": {
-          "$ref": "#/definitions/v1Resource"
-        },
-        "principal": {
-          "$ref": "#/definitions/v1Principal"
-        },
-        "actions": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "required": [
-            "actions"
-          ]
-        }
-      },
-      "required": [
-        "actions"
-      ]
     },
     "v1CheckOutput": {
       "type": "object",
@@ -920,7 +1105,7 @@
         "inputs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1CheckInput"
+            "$ref": "#/definitions/enginev1CheckInput"
           }
         },
         "outputs": {
@@ -969,6 +1154,18 @@
         }
       },
       "description": "Audit log stream."
+    },
+    "v1ListPoliciesResponse": {
+      "type": "object",
+      "properties": {
+        "policies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Policy"
+          }
+        }
+      },
+      "description": "List of policies stored in the Cerbos server"
     },
     "v1Match": {
       "type": "object",
@@ -1100,6 +1297,54 @@
       },
       "description": "Playground response"
     },
+    "v1PlaygroundProxyRequest": {
+      "type": "object",
+      "properties": {
+        "playgroundId": {
+          "type": "string"
+        },
+        "policyFiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1PolicyFile"
+          },
+          "description": "List of policy files.",
+          "maxItems": 10,
+          "minItems": 1,
+          "required": [
+            "policy_files"
+          ]
+        },
+        "checkResourceSet": {
+          "$ref": "#/definitions/v1CheckResourceSetRequest"
+        },
+        "checkResourceBatch": {
+          "$ref": "#/definitions/v1CheckResourceBatchRequest"
+        }
+      },
+      "description": "Playground proxy request",
+      "required": [
+        "policyFiles"
+      ]
+    },
+    "v1PlaygroundProxyResponse": {
+      "type": "object",
+      "properties": {
+        "playgroundId": {
+          "type": "string"
+        },
+        "failure": {
+          "$ref": "#/definitions/v1PlaygroundFailure"
+        },
+        "checkResourceSet": {
+          "$ref": "#/definitions/v1CheckResourceSetResponse"
+        },
+        "checkResourceBatch": {
+          "$ref": "#/definitions/v1CheckResourceBatchResponse"
+        }
+      },
+      "description": "Playground proxy response"
+    },
     "v1PlaygroundValidateRequest": {
       "type": "object",
       "properties": {
@@ -1162,6 +1407,12 @@
         },
         "derivedRoles": {
           "$ref": "#/definitions/v1DerivedRoles"
+        },
+        "globals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -1360,6 +1611,9 @@
         },
         "effect": {
           "$ref": "#/definitions/v1Effect"
+        },
+        "name": {
+          "type": "string"
         }
       }
     },
@@ -1432,6 +1686,21 @@
           "$ref": "#/definitions/v1Condition"
         }
       }
+    },
+    "v1ServerInfoResponse": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "buildDate": {
+          "type": "string"
+        }
+      },
+      "description": "Server info response"
     }
   },
   "securityDefinitions": {

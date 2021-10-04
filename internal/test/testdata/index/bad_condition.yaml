@@ -6,7 +6,7 @@ wantErrJson: |-
     "loadFailures": null,
     "codegenFailures": [
       {
-        "error": "resource.yaml: Failed to generate code for rule #1 [Invalid match expression: undeclared reference to 'xxxx' (in container '')]",
+        "error": "resource.yaml: Failed to generate code for rule 'rule-001' (#1) [Invalid match expression: undeclared reference to 'xxxx' (in container '')]",
         "file": "resource.yaml"
       }
     ],

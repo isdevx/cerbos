@@ -33,20 +33,23 @@ type Client interface {
 	CheckResourceSet(context.Context, *Principal, *ResourceSet, ...string) (*CheckResourceSetResponse, error)
 	// CheckResourceBatch checks access to a batch of resources of different kinds.
 	CheckResourceBatch(context.Context, *Principal, *ResourceBatch) (*CheckResourceBatchResponse, error)
+	// ServerInfo retrieves server information
+	ServerInfo(context.Context) (*ServerInfo, error)
 }
 
 type config struct {
-	address        string
-	plaintext      bool
-	tlsAuthority   string
-	tlsInsecure    bool
-	tlsCACert      string
-	tlsClientCert  string
-	tlsClientKey   string
-	connectTimeout time.Duration
-	maxRetries     uint
-	retryTimeout   time.Duration
-	userAgent      string
+	address            string
+	plaintext          bool
+	tlsAuthority       string
+	tlsInsecure        bool
+	tlsCACert          string
+	tlsClientCert      string
+	tlsClientKey       string
+	connectTimeout     time.Duration
+	maxRetries         uint
+	retryTimeout       time.Duration
+	userAgent          string
+	playgroundInstance string
 }
 
 type Opt func(*config)
@@ -112,6 +115,15 @@ func WithRetryTimeout(timeout time.Duration) Opt {
 func WithUserAgent(ua string) Opt {
 	return func(c *config) {
 		c.userAgent = ua
+	}
+}
+
+// WithPlaygroundInstance sets the Cerbos playground instance to use as the source of policies.
+// Note that Playground instances are for demonstration purposes only and do not provide any
+// performance or availability guarantees.
+func WithPlaygroundInstance(instance string) Opt {
+	return func(c *config) {
+		c.playgroundInstance = instance
 	}
 }
 
@@ -187,6 +199,10 @@ func mkDialOpts(conf *config) ([]grpc.DialOption, error) {
 		if conf.tlsAuthority != "" {
 			dialOpts = append(dialOpts, grpc.WithAuthority(conf.tlsAuthority))
 		}
+	}
+
+	if conf.playgroundInstance != "" {
+		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(newPlaygroundInstanceCredentials(conf.playgroundInstance)))
 	}
 
 	return dialOpts, nil
@@ -333,4 +349,14 @@ func isValid(obj interface {
 	}
 
 	return obj.Validate()
+}
+
+func (gc *grpcClient) ServerInfo(ctx context.Context) (*ServerInfo, error) {
+	resp, err := gc.stub.ServerInfo(ctx, &requestv1.ServerInfoRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return &ServerInfo{
+		ServerInfoResponse: resp,
+	}, nil
 }

@@ -99,8 +99,43 @@ condition:
         !(R.attr.qa == true || R.attr.canary == true))
 ----
 
+== Globals
+If your policy repeats the same expression in multiple conditions, you can declare it in the globals section of a policy and refer in the conditions to avoid a repeat.
 
-
+[source,yaml,linenums]
+----
+---
+apiVersion: "api.cerbos.dev/v1"
+globals:
+  is_dev_record: request.resource.attr.dev_record == true
+principalPolicy:
+  principal: daffy_duck
+  version: "dev"
+  rules:
+    - resource: leave_request
+      actions:
+        - name: dev_record_wildcard
+          action: "*"
+          condition:
+            match:
+              expr: globals.is_dev_record
+          effect: EFFECT_ALLOW
+    - resource: employee_profile
+      actions:
+        - name: view_employee_profile
+          action: "*"
+          condition:
+            match:
+              all:
+                of:
+                  - expr: globals.is_dev_record
+                  - expr: request.resource.attr.public == true
+          effect: EFFECT_ALLOW
+    - resource: salary_record
+      actions:
+        - action: "*"
+          effect: EFFECT_DENY
+----
 == Operators
 
 NOTE: CEL has many builtin functions and operators. The fully up-to-date list can be found at https://github.com/google/cel-spec/blob/master/doc/langdef.md#list-of-standard-definitions. 
@@ -156,6 +191,46 @@ NOTE: CEL has many builtin functions and operators. The fully up-to-date list ca
 |===
 
 
+[#hierarchies]
+== Hierarchies
+
+NOTE: The hierarchy functions are Cerbos-specific extensions to CEL.
+
+.Test data
+[source,json,linenums]
+----
+...
+"principal": {
+  "id": "john",
+  "roles": ["employee"],
+  "attr": {
+    "scope": "foo.bar.baz.qux",
+  }
+},
+"resource": {
+  "kind": "leave_request",
+  "attr": {
+    "scope": "foo.bar",
+  }
+}
+...
+----
+
+[caption=]
+[%header,cols=".^1m,.^2,4m",grid=rows]
+|===
+| Function | Description | Example 
+| hierarchy | Convert a dotted string representation to a hierarchy | hierarchy("a.b.c").size() == 3
+| ancestorOf | Returns true if the first hierarchy shares a common prefix with the second hierarchy | hierarchy("a.b").ancestorOf(hierarchy("a.b.c.d")) == true
+| commonAncestors | Returns the common ancestor hierarchy | hierarchy(R.attr.scope).commonAncestors(hierarchy(P.attr.scope)) == hierarchy("foo.bar")
+| descendentOf | Mirror function of `ancestorOf` | hierarchy("a.b.c.d").descendentOf(hierarchy("a.b")) == true 
+| immediateChildOf | Returns true if the first hierarchy is a first-level child of the second hierarchy | hierarchy("a.b.c").immediateChildOf(hierarchy("a.b")) == true && hierarchy("a.b.c.d").immediateChildOf(hierarchy("a.b")) == false
+| immediateParentOf | Mirror function of `immediateChildOf` | hierarchy("a.b").immediateParentOf(hierarchy("a.b.c")) == true && hierarchy("a.b").immediateParentOf(hierarchy("a.b.c.d")) == false
+| siblingOf | Returns true if both hierarchies share the same parent | hierarchy("a.b.c").siblingOf(hierarchy("a.b.d")) == true
+| size | Returns the number of levels in the hierarchy | hierarchy("a.b.c").size() == 3
+| []   | Access a level in the hierarchy | hierarchy("a.b.c.d")[1] == "b"
+|===
+
 
 == IP Addresses
 
@@ -194,7 +269,7 @@ NOTE: The IP address functions are Cerbos-specific extensions to CEL.
   "id": "elmer_fudd",
   "attr": {
     "id": "125",
-    "teams": ["design", "product_marketing", "communications", "commercial"],
+    "teams": ["design", "communications", "product", "commercial"],
     "clients": {
       "acme": {"active": true},
       "bb inc": {"active": true}
@@ -208,14 +283,19 @@ NOTE: The IP address functions are Cerbos-specific extensions to CEL.
 [%header,cols=".^1m,.^2,4m",grid=rows]
 |===
 | Operator/Function | Description | Example 
+| + | Concatenates lists | P.attr.teams + ["design", "engineering"]
 | []       | Index into a list or a map | P.attr.teams[0] == "design" && P.attr.clients["acme"]["active"] == true
 | all      | Check whether all elements in a list match the predicate | P.attr.teams.all(t, size(t) > 3)
+| except | Produces the set difference of two lists | P.attr.teams.except(["design", "engineering"]) == ["communications", "product", "commercial"]
 | exists   | Check whether at least one element matching the predicate exists | P.attr.teams.exists(t, t.startsWith("comm"))
 | exists_one | Check that only one element matching the predicate exists | P.attr.teams.exists_one(t, t.startsWith("comm")) == false
 | filter   | Filter a list using the predicate | size(P.attr.teams.filter(t, t.matches("^comm"))) == 2
+| has_intersection| Checks whether the lists have at least one common element | has_intersection(["design", "engineering"], P.attr.teams)
 | in       | Check whether the given element is contained in the list or map | ("design" in P.attr.teams) && ("acme" in P.attr.clients)
+| intersect| Produces the set intersection of two lists | intersect(["design", "engineering"], P.attr.teams) == ["design"]
+| is_subset| Checks whether the list is a subset of another list | ["design", "engineering"].is_subset(P.attr.teams) == false
 | map      | Transform each element in a list | "DESIGN" in P.attr.teams.map(t, t.upperAscii())
-| size     | Number of elements in a list or map | size(P.attr.teams) == 4 && size(P.attr.clients) == 2 
+| size     | Number of elements in a list or map | size(P.attr.teams) == 4 && size(P.attr.clients) == 2
 |===
 
 
