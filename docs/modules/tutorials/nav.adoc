@@ -1,2 +1,0 @@
-.Tutorials
-* xref:photo-share/index.adoc[Photo-share application]
