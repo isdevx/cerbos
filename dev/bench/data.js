@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1633358353737,
+  "lastUpdate": 1633364129508,
   "repoUrl": "https://github.com/isdevx/cerbos",
   "entries": {
     "Go Benchmark": [
@@ -224,6 +224,56 @@ window.BENCHMARK_DATA = {
             "value": 2775,
             "unit": "ns/op",
             "extra": "431443 times"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "isdevx",
+            "username": "isdevx"
+          },
+          "committer": {
+            "name": "isdevx",
+            "username": "isdevx"
+          },
+          "id": "ae24980c05d8606fdf12d8bfb04dc6b9de727264",
+          "message": "Create benchmark.yml",
+          "timestamp": "2021-08-06T08:37:33Z",
+          "url": "https://github.com/isdevx/cerbos/pull/7/commits/ae24980c05d8606fdf12d8bfb04dc6b9de727264"
+        },
+        "date": 1633364127247,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkCompile",
+            "value": 6751801,
+            "unit": "ns/op\t 1512833 B/op\t   35083 allocs/op",
+            "extra": "177 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkIntersect50",
+            "value": 15507,
+            "unit": "ns/op",
+            "extra": "77014 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkIntersect25",
+            "value": 9287,
+            "unit": "ns/op",
+            "extra": "131162 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkIntersect15",
+            "value": 6116,
+            "unit": "ns/op",
+            "extra": "172318 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkIntersect5",
+            "value": 3442,
+            "unit": "ns/op",
+            "extra": "341742 times\n2 procs"
           }
         ]
       }
