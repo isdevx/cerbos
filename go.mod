@@ -8,9 +8,8 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20210512092938-c05353c2d58c // indirect
 	github.com/alecthomas/chroma v0.9.2
 	github.com/bluele/gcache v0.0.2
-	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash v1.1.0
-	github.com/dgraph-io/badger/v3 v3.2103.0
+	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/doug-martin/goqu/v9 v9.14.0
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
 	github.com/fatih/color v1.12.0
@@ -34,7 +33,6 @@ require (
 	github.com/jwalton/gchalk v1.0.3
 	github.com/kavu/go_reuseport v1.5.0
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
-	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/matryer/is v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.13
