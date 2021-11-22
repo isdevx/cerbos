@@ -23,7 +23,7 @@ update_version() {
     echo "Setting version to $VER"
 
     # Docs version
-    sed -i -E "s#app\-version: \"[0-9]+\.[0-9]+\.[0-9]+.*\"#app-version: \"$VER\"#" "${DOCS_DIR}/antora-playbook.yml"
+    sed -i -E "s#app\-version: \"[0-9]+\.[0-9]+\.[0-9]+.*\"#app-version: \"${VER}@\"#" "${DOCS_DIR}/antora-playbook.yml"
     sed -i -E "s#^version: \"[0-9]+\.[0-9]+\.[0-9]+.*\"#version: \"$VER\"#" "${DOCS_DIR}/antora.yml"
     sed -i -E "/^prerelease:/d" "${DOCS_DIR}/antora.yml"
 
@@ -34,7 +34,7 @@ update_version() {
 
 set_branch() {
     local BRANCH="$1"
-    sed -i -E "s#branches:.*#branches: [${BRANCH}]#g" "${DOCS_DIR}/antora-playbook.yml"
+    sed -i -E "s#branches:.*#branches: [${BRANCH}, 'v*']#g" "${DOCS_DIR}/antora-playbook.yml"
 }
 
 # Set release version and tag
@@ -44,6 +44,10 @@ set_branch "main"
 # Commit changes and tag release
 git -C "$PROJECT_DIR" commit -s -a -m "chore(release): Prepare release $VERSION"
 git tag "v${VERSION}" -m "v${VERSION}"
+# Create a release branch
+SEGMENTS=(${VERSION//./ })
+RELEASE_BRANCH="v${SEGMENTS[0]}.${SEGMENTS[1]}"
+git branch "$RELEASE_BRANCH" "v${VERSION}" || true 
 
 # Set next version
 update_version $NEXT_VERSION
@@ -53,3 +57,6 @@ set_branch "HEAD"
 sed -i -E "/^version:/a prerelease: -prerelease" "${DOCS_DIR}/antora.yml"
 # Commit changes
 git -C "$PROJECT_DIR" commit -s -a -m "chore(version): Bump version to $NEXT_VERSION"
+
+echo "Run the following commands to trigger the release"
+echo "git push --atomic upstream main ${RELEASE_BRANCH} ${VERSION}"

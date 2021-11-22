@@ -249,6 +249,42 @@
             "BasicAuth": []
           }
         ]
+      },
+      "post": {
+        "summary": "List policies",
+        "operationId": "CerbosAdminService_ListPolicies2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListPoliciesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CerbosAdminService"
+        ],
+        "security": [
+          {
+            "BasicAuth": []
+          }
+        ]
       }
     },
     "/api/check": {
@@ -441,6 +477,26 @@
     }
   },
   "definitions": {
+    "AuxDataJWT": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "JWT from the original request",
+          "required": [
+            "token"
+          ]
+        },
+        "keySetId": {
+          "type": "string",
+          "description": "Key ID to use when decoding the token (defined in the Cerbos server configuration)"
+        }
+      },
+      "description": "JWT from the original request",
+      "required": [
+        "token"
+      ]
+    },
     "CheckOutputActionEffect": {
       "type": "object",
       "properties": {
@@ -560,22 +616,31 @@
       "properties": {
         "type": {
           "$ref": "#/definitions/ListPoliciesRequestMatchType",
-          "enum": [
-            "MATCH_TYPE_EXACT",
-            "MATCH_TYPE_WILDCARD"
-          ],
+          "example": "MATCH_TYPE_WILDCARD",
           "description": "Kind of filter"
         },
         "fieldPath": {
           "type": "string",
           "example": "$.resourcePolicy.resource",
-          "description": "JSONPath expression describing the field to match"
+          "description": "JSONPath expression describing the field to match",
+          "required": [
+            "field_path"
+          ]
         },
         "value": {
           "type": "string",
-          "description": "The value to compare"
+          "example": "*",
+          "description": "The value to compare",
+          "required": [
+            "value"
+          ]
         }
-      }
+      },
+      "description": "Filter options",
+      "required": [
+        "fieldPath",
+        "value"
+      ]
     },
     "ListPoliciesRequestMatchType": {
       "type": "string",
@@ -591,21 +656,16 @@
       "properties": {
         "column": {
           "$ref": "#/definitions/SortOptionsColumn",
-          "enum": [
-            "COLUMN_NAME",
-            "COLUMN_VERSION"
-          ],
+          "example": "COLUMN_NAME",
           "description": "Sort column"
         },
         "order": {
           "$ref": "#/definitions/SortOptionsOrder",
-          "enum": [
-            "ORDER_ASCENDING",
-            "ORDER_DESCENDING"
-          ],
+          "example": "ORDER_ASCENDING",
           "description": "Sort order"
         }
-      }
+      },
+      "description": "Sort options"
     },
     "MatchExprList": {
       "type": "object",
@@ -737,6 +797,27 @@
       ],
       "default": "ORDER_UNSPECIFIED"
     },
+    "cerbosenginev1AuxData": {
+      "type": "object",
+      "properties": {
+        "jwt": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "Structured auxiliary data"
+    },
+    "cerbosrequestv1AuxData": {
+      "type": "object",
+      "properties": {
+        "jwt": {
+          "$ref": "#/definitions/AuxDataJWT"
+        }
+      },
+      "description": "Structured auxiliary data useful for evaluating the request"
+    },
     "enginev1CheckInput": {
       "type": "object",
       "properties": {
@@ -757,6 +838,9 @@
           "required": [
             "actions"
           ]
+        },
+        "auxData": {
+          "$ref": "#/definitions/cerbosenginev1AuxData"
         }
       },
       "required": [
@@ -936,6 +1020,9 @@
           "required": [
             "resources"
           ]
+        },
+        "auxData": {
+          "$ref": "#/definitions/cerbosrequestv1AuxData"
         }
       },
       "description": "PDP Request",
@@ -1023,6 +1110,9 @@
         "includeMeta": {
           "type": "boolean",
           "description": "Opt to receive request processing metadata in the response."
+        },
+        "auxData": {
+          "$ref": "#/definitions/cerbosrequestv1AuxData"
         }
       },
       "description": "PDP Request",
@@ -1155,6 +1245,21 @@
       },
       "description": "Audit log stream."
     },
+    "v1ListPoliciesRequest": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ListPoliciesRequestFilter"
+          }
+        },
+        "sortOptions": {
+          "$ref": "#/definitions/ListPoliciesRequestSortOptions"
+        }
+      },
+      "description": "List policies request"
+    },
     "v1ListPoliciesResponse": {
       "type": "object",
       "properties": {
@@ -1262,6 +1367,9 @@
           "required": [
             "actions"
           ]
+        },
+        "auxData": {
+          "$ref": "#/definitions/cerbosrequestv1AuxData"
         }
       },
       "description": "Playground evaluate request",
@@ -1408,7 +1516,7 @@
         "derivedRoles": {
           "$ref": "#/definitions/v1DerivedRoles"
         },
-        "globals": {
+        "variables": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
@@ -1503,6 +1611,9 @@
           "items": {
             "$ref": "#/definitions/v1PrincipalRule"
           }
+        },
+        "scope": {
+          "type": "string"
         }
       }
     },
@@ -1582,6 +1693,9 @@
           "items": {
             "$ref": "#/definitions/v1ResourceRule"
           }
+        },
+        "scope": {
+          "type": "string"
         }
       }
     },
