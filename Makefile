@@ -1,8 +1,16 @@
 DOCKER := docker
-MOCK_INTERFACES := '(Index|Store)'
+MOCK_INTERFACES := 'Index'
 
 include tools/tools.mk
 include hack/dev/dev.mk
+
+VERSION := $(shell git describe --abbrev=0)
+COMMIT_SHA := $(shell git rev-parse HEAD)
+BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+LDFLAGS += -X "github.com/cerbos/cerbos/internal/util.Version=$(VERSION)"
+LDFLAGS += -X "github.com/cerbos/cerbos/internal/util.Commit=$(COMMIT_SHA)"
+LDFLAGS += -X "github.com/cerbos/cerbos/internal/util.BuildDate=$(BUILD_DATE)"
 
 .PHONY: all
 all: clean build
@@ -38,6 +46,7 @@ generate-proto-code: proto-gen-deps
 .PHONY: generate-mocks
 generate-mocks: $(MOCKERY)
 	@-rm -rf $(MOCK_DIR)
+	@ $(MOCKERY) --version
 	@ $(MOCKERY) --recursive --quiet --name=$(MOCK_INTERFACES) --output $(MOCK_DIR) --boilerplate-file=hack/copyright_header.txt
 
 .PHONY: generate-notice
@@ -51,7 +60,7 @@ generate-notice: $(GO_LICENCE_DETECTOR)
 
 .PHONY: deps
 deps:
-	@ go mod tidy
+	@ go mod tidy -compat=1.17
 
 .PHONY: test-all
 test-all: test-race test-integration
@@ -81,9 +90,35 @@ pre-commit: lint-helm build test-race
 
 .PHONY: build
 build: $(GORELEASER) generate lint test
-	@ $(GORELEASER) --config=.goreleaser-dev.yml --snapshot --skip-publish --rm-dist
+	@ $(GORELEASER) release --config=.goreleaser.yml --snapshot --skip-publish --rm-dist
 
 .PHONY: docs
 docs:
 	@ docs/build.sh
 
+.PHONY: install
+install: install-cerbos install-cerbosctl
+
+.PHONY: install-cerbos
+install-cerbos:
+	@ if [ -x "$$(command -v cerbos)" ]; then \
+		echo "cerbos is already installed, do you want to re-install it? [y/N] " && read ans; \
+			if [ $$ans = y ] || [ $$ans = Y ]  ; then \
+				go install -ldflags '$(LDFLAGS)' ./cmd/cerbos; \
+			else \
+				echo "aborting install"; \
+			exit -1; \
+		fi; \
+	fi; \
+
+.PHONY: install-cerbosctl
+install-cerbosctl:
+	@ if [ -x "$$(command -v cerbosctl)" ]; then \
+		echo "cerbosctl is already installed, do you want to re-install it? [y/N] " && read ans; \
+			if [ $$ans = y ] || [ $$ans = Y ]  ; then \
+				go install -ldflags '$(LDFLAGS)' ./cmd/cerbosctl; \
+			else \
+				echo "aborting install"; \
+			exit -1; \
+		fi; \
+	fi; \

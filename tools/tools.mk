@@ -24,7 +24,7 @@ MOCK_DIR := internal/test/mocks
 
 define BUF_GEN_TEMPLATE
 {\
-  "version": "v1beta1",\
+  "version": "v1",\
   "plugins": [\
     {\
       "name": "go",\
@@ -99,7 +99,7 @@ $(GRPCURL): $(TOOLS_BIN_DIR)
 	@ GOBIN=$(TOOLS_BIN_DIR) go install -modfile=$(TOOLS_MOD) github.com/fullstorydev/grpcurl/cmd/grpcurl
 
 $(MOCKERY): $(TOOLS_BIN_DIR)
-	@ GOBIN=$(TOOLS_BIN_DIR) go install -modfile=$(TOOLS_MOD) github.com/vektra/mockery/v2/
+	@ GOBIN=$(TOOLS_BIN_DIR) go install -modfile=$(TOOLS_MOD) github.com/vektra/mockery/v2
 
 $(PROTOC_GEN_GO): $(TOOLS_BIN_DIR) 
 	@ GOBIN=$(TOOLS_BIN_DIR) go install -modfile=$(TOOLS_MOD) google.golang.org/protobuf/cmd/protoc-gen-go

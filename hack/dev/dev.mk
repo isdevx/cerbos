@@ -9,15 +9,15 @@ $(DEV_DIR)/tls.crt:
 
 .PHONY: dev-server
 dev-server: $(DEV_DIR)/tls.crt
-	@ go run main.go server --log-level=DEBUG --debug-listen-addr=":6666" --zpages-enabled --config=$(DEV_DIR)/conf.secure.yaml 
+	@ go run cmd/cerbos/main.go server --log-level=DEBUG --debug-listen-addr=":6666" --zpages-enabled --config=$(DEV_DIR)/conf.secure.yaml 
 
 .PHONY: perf-server
 perf-server: $(DEV_DIR)/tls.crt
-	@ go run main.go server --log-level=ERROR --debug-listen-addr=":6666" --zpages-enabled --config=$(DEV_DIR)/conf.secure.yaml --set=tracing.sampleProbability=0 --set=storage.disk.watchForChanges=false
+	@ go run cmd/cerbos/main.go server --log-level=ERROR --debug-listen-addr=":6666" --zpages-enabled --config=$(DEV_DIR)/conf.secure.yaml --set=tracing.sampleProbability=0 --set=storage.disk.watchForChanges=false
 
 .PHONY: dev-server-insecure
 dev-server-insecure:
-	@ go run main.go server --log-level=DEBUG --debug-listen-addr=":6666" --zpages-enabled --config=$(DEV_DIR)/conf.insecure.yaml
+	@ go run cmd/cerbos/main.go server --log-level=DEBUG --debug-listen-addr=":6666" --zpages-enabled --config=$(DEV_DIR)/conf.insecure.yaml
 
 .PHONY: protoset
 protoset: $(BUF)
@@ -181,4 +181,4 @@ jaeger:
 		-p 14268:14268 \
 		-p 14250:14250 \
 		-p 9411:9411 \
-		jaegertracing/all-in-one:1.22 
+		jaegertracing/all-in-one:1.28 

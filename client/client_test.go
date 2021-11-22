@@ -22,6 +22,8 @@ import (
 const (
 	adminUsername = "cerbos"
 	adminPassword = "cerbosAdmin"
+	jwt           = "eyJhbGciOiJFUzM4NCIsImtpZCI6IjE5TGZaYXRFZGc4M1lOYzVyMjNndU1KcXJuND0iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOlsiY2VyYm9zLWp3dC10ZXN0cyJdLCJjdXN0b21BcnJheSI6WyJBIiwiQiIsIkMiXSwiY3VzdG9tSW50Ijo0MiwiY3VzdG9tTWFwIjp7IkEiOiJBQSIsIkIiOiJCQiIsIkMiOiJDQyJ9LCJjdXN0b21TdHJpbmciOiJmb29iYXIiLCJleHAiOjE5NDk5MzQwMzksImlzcyI6ImNlcmJvcy10ZXN0LXN1aXRlIn0.WN_tOScSpd_EI-P5EI1YlagxEgExSfBjAtcrgcF6lyWj1lGpR_GKx9goZEp2p_t5AVWXN_bjz_sMUmJdJa4cVd55Qm1miR-FKu6oNRHnSEWdMFmnArwPw-YDJWfylLFX"
+	timeout       = 15 * time.Second
 )
 
 func TestClient(t *testing.T) {
@@ -58,10 +60,25 @@ func TestClient(t *testing.T) {
 
 				loadPolicies(t, ac)
 
-				c, err := client.New(s.GRPCAddr(), tc.opts...)
-				require.NoError(t, err)
+				ports := []struct {
+					name string
+					addr string
+				}{
+					{
+						name: "grpc",
+						addr: s.GRPCAddr(),
+					},
+					{
+						name: "http",
+						addr: s.HTTPAddr(),
+					},
+				}
+				for _, port := range ports {
+					c, err := client.New(port.addr, tc.opts...)
+					require.NoError(t, err)
 
-				t.Run("grpc", testGRPCClient(c))
+					t.Run(port.name, testGRPCClient(c.With(client.AuxDataJWT(jwt, ""))))
+				}
 			})
 
 			t.Run("uds", func(t *testing.T) {
@@ -84,7 +101,7 @@ func TestClient(t *testing.T) {
 				c, err := client.New(s.GRPCAddr(), tc.opts...)
 				require.NoError(t, err)
 
-				t.Run("grpc", testGRPCClient(c))
+				t.Run("grpc", testGRPCClient(c.With(client.AuxDataJWT(jwt, ""))))
 			})
 		})
 	}
@@ -137,7 +154,7 @@ func loadPolicies(t *testing.T, ac client.AdminClient) {
 func testGRPCClient(c client.Client) func(*testing.T) {
 	return func(t *testing.T) { //nolint:thelper
 		t.Run("CheckResourceSet", func(t *testing.T) {
-			ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 			defer cancelFunc()
 
 			have, err := c.CheckResourceSet(
@@ -159,15 +176,16 @@ func testGRPCClient(c client.Client) func(*testing.T) {
 						"owner":      "john",
 						"team":       "design",
 					}),
-				"view:public", "approve")
+				"view:public", "approve", "defer")
 
 			require.NoError(t, err)
 			require.True(t, have.IsAllowed("XX125", "view:public"))
 			require.False(t, have.IsAllowed("XX125", "approve"))
+			require.True(t, have.IsAllowed("XX125", "defer"))
 		})
 
 		t.Run("CheckResourceBatch", func(t *testing.T) {
-			ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 			defer cancelFunc()
 
 			have, err := c.CheckResourceBatch(
@@ -190,7 +208,7 @@ func testGRPCClient(c client.Client) func(*testing.T) {
 							"id":         "XX125",
 							"owner":      "john",
 							"team":       "design",
-						}), "view:public").
+						}), "view:public", "defer").
 					Add(client.
 						NewResource("leave_request", "XX125").
 						WithPolicyVersion("20210210").
@@ -216,11 +234,12 @@ func testGRPCClient(c client.Client) func(*testing.T) {
 			require.NoError(t, err)
 			require.True(t, have.IsAllowed("XX125", "view:public"))
 			require.False(t, have.IsAllowed("XX125", "approve"))
+			require.True(t, have.IsAllowed("XX125", "defer"))
 			require.False(t, have.IsAllowed("XX225", "approve"))
 		})
 
 		t.Run("IsAllowed", func(t *testing.T) {
-			ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 			defer cancelFunc()
 
 			have, err := c.IsAllowed(
@@ -242,7 +261,7 @@ func testGRPCClient(c client.Client) func(*testing.T) {
 						"owner":      "john",
 						"team":       "design",
 					}),
-				"view:public")
+				"defer")
 
 			require.NoError(t, err)
 			require.True(t, have)

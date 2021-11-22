@@ -33,20 +33,25 @@ type Client interface {
 	CheckResourceSet(context.Context, *Principal, *ResourceSet, ...string) (*CheckResourceSetResponse, error)
 	// CheckResourceBatch checks access to a batch of resources of different kinds.
 	CheckResourceBatch(context.Context, *Principal, *ResourceBatch) (*CheckResourceBatchResponse, error)
+	// ServerInfo retrieves server information.
+	ServerInfo(context.Context) (*ServerInfo, error)
+	// With sets per-request options for the client.
+	With(opts ...RequestOpt) Client
 }
 
 type config struct {
-	address        string
-	plaintext      bool
-	tlsAuthority   string
-	tlsInsecure    bool
-	tlsCACert      string
-	tlsClientCert  string
-	tlsClientKey   string
-	connectTimeout time.Duration
-	maxRetries     uint
-	retryTimeout   time.Duration
-	userAgent      string
+	address            string
+	plaintext          bool
+	tlsAuthority       string
+	tlsInsecure        bool
+	tlsCACert          string
+	tlsClientCert      string
+	tlsClientKey       string
+	connectTimeout     time.Duration
+	maxRetries         uint
+	retryTimeout       time.Duration
+	userAgent          string
+	playgroundInstance string
 }
 
 type Opt func(*config)
@@ -112,6 +117,15 @@ func WithRetryTimeout(timeout time.Duration) Opt {
 func WithUserAgent(ua string) Opt {
 	return func(c *config) {
 		c.userAgent = ua
+	}
+}
+
+// WithPlaygroundInstance sets the Cerbos playground instance to use as the source of policies.
+// Note that Playground instances are for demonstration purposes only and do not provide any
+// performance or availability guarantees.
+func WithPlaygroundInstance(instance string) Opt {
+	return func(c *config) {
+		c.playgroundInstance = instance
 	}
 }
 
@@ -189,6 +203,10 @@ func mkDialOpts(conf *config) ([]grpc.DialOption, error) {
 		}
 	}
 
+	if conf.playgroundInstance != "" {
+		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(newPlaygroundInstanceCredentials(conf.playgroundInstance)))
+	}
+
 	return dialOpts, nil
 }
 
@@ -227,6 +245,7 @@ func mkTLSConfig(conf *config) (*tls.Config, error) {
 
 type grpcClient struct {
 	stub svcv1.CerbosServiceClient
+	opts *reqOpt
 }
 
 func (gc *grpcClient) CheckResourceSet(ctx context.Context, principal *Principal, resourceSet *ResourceSet, actions ...string) (*CheckResourceSetResponse, error) {
@@ -252,6 +271,10 @@ func (gc *grpcClient) CheckResourceSet(ctx context.Context, principal *Principal
 		Actions:   actions,
 		Principal: principal.p,
 		Resource:  resourceSet.rs,
+	}
+
+	if gc.opts != nil {
+		req.AuxData = gc.opts.auxData
 	}
 
 	result, err := gc.stub.CheckResourceSet(ctx, req)
@@ -280,6 +303,10 @@ func (gc *grpcClient) CheckResourceBatch(ctx context.Context, principal *Princip
 		RequestId: reqID.String(),
 		Principal: principal.p,
 		Resources: resourceBatch.batch,
+	}
+
+	if gc.opts != nil {
+		req.AuxData = gc.opts.auxData
 	}
 
 	result, err := gc.stub.CheckResourceBatch(ctx, req)
@@ -312,6 +339,10 @@ func (gc *grpcClient) IsAllowed(ctx context.Context, principal *Principal, resou
 		},
 	}
 
+	if gc.opts != nil {
+		req.AuxData = gc.opts.auxData
+	}
+
 	result, err := gc.stub.CheckResourceBatch(ctx, req)
 	if err != nil {
 		return false, fmt.Errorf("request failed: %w", err)
@@ -333,4 +364,23 @@ func isValid(obj interface {
 	}
 
 	return obj.Validate()
+}
+
+func (gc *grpcClient) ServerInfo(ctx context.Context) (*ServerInfo, error) {
+	resp, err := gc.stub.ServerInfo(ctx, &requestv1.ServerInfoRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return &ServerInfo{
+		ServerInfoResponse: resp,
+	}, nil
+}
+
+func (gc *grpcClient) With(reqOpts ...RequestOpt) Client {
+	opts := &reqOpt{}
+	for _, ro := range reqOpts {
+		ro(opts)
+	}
+
+	return &grpcClient{opts: opts, stub: gc.stub}
 }

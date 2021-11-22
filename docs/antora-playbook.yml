@@ -9,15 +9,18 @@ site:
 content:
   sources:
     - url: ./../
-      branches: [HEAD]
+      branches: [HEAD, 'v*']
       edit_url: 'https://github.com/cerbos/cerbos/tree/{refname}/{path}'
       start_path: docs
 urls:
   redirect_facility: netlify
+  latest_version_segment: latest
+  latest_version_segment_strategy: redirect:to
+  latest_prerelease_version_segment: prerelease
 asciidoc:
   attributes:
     app-name: "cerbos"
-    app-version: "0.5.0"
+    app-version: "0.11.0@"
     experimental: true
     page-pagination: true
 ui:
@@ -26,8 +29,10 @@ ui:
     snapshot: true
   supplemental_files: ./supplemental-ui
 output:
-  clean: true
-  dir: ./build
   destinations:
+    - provider: fs
+      path: ./build
+      clean: true
     - provider: archive
       path: ./build/cerbos_docs.zip
+      clean: true

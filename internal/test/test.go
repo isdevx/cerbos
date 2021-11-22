@@ -1,11 +1,13 @@
 // Copyright 2021 Zenauth Ltd.
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build tests
 // +build tests
 
 package test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,6 +17,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/require"
 
@@ -118,6 +121,16 @@ func LoadTestCases(tb testing.TB, subDir string) []Case {
 			Input: readFileContents(tb, entry),
 		}
 
+		tmpl, err := template.New(entry).Funcs(GetTemplateUtilityFunctions()).Parse(string(testCases[i].Input))
+		require.NoError(tb, err)
+
+		var output bytes.Buffer
+
+		err = tmpl.Execute(&output, GetTemplateFunctions(tb))
+		require.NoError(tb, err)
+
+		testCases[i].Input = output.Bytes()
+
 		wantedFiles, err := filepath.Glob(fmt.Sprintf("%s.*", entry))
 		require.NoError(tb, err)
 
@@ -142,7 +155,7 @@ func readFileContents(tb testing.TB, filePath string) []byte {
 	if _, err := os.Stat(filePath); err == nil {
 		b, err := os.ReadFile(filePath)
 		if err != nil {
-			tb.Errorf("Failed to read %s: %w", filePath, err)
+			tb.Errorf("Failed to read %s: %s", filePath, err)
 			return nil
 		}
 

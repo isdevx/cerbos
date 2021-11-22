@@ -1,0 +1,151 @@
+snapshot:
+  name_template: '{{ incminor .Version }}-prerelease'
+
+builds:
+  - main: ./cmd/cerbos
+    binary: cerbos
+    id: "cerbos"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - 6
+      - 7
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/cerbos/cerbos/internal/util.Version={{.Version}} -X github.com/cerbos/cerbos/internal/util.Commit={{.FullCommit}} -X github.com/cerbos/cerbos/internal/util.BuildDate={{.Date}}  
+  - main: ./cmd/cerbosctl
+    binary: cerbosctl
+    id: "cerbosctl"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - 6
+      - 7
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/cerbos/cerbos/internal/util.Version={{.Version}} -X github.com/cerbos/cerbos/internal/util.Commit={{.FullCommit}} -X github.com/cerbos/cerbos/internal/util.BuildDate={{.Date}}  
+universal_binaries:
+  - id: "cerbos"
+    replace: false
+    name_template: "cerbos"
+  - id: "cerbosctl"
+    replace: false
+    name_template: "cerbosctl"
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      amd64: x86_64
+nfpms:
+  - id: cerbos
+    package_name: cerbos
+    builds:
+      - cerbos
+      - cerbosctl
+    vendor: Zenauth Ltd.
+    homepage: https://cerbos.dev
+    maintainer: "Cerbos Authors <help@cerbos.dev>"
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
+    scripts:
+      postinstall: deploy/linux/scripts/post-install.sh
+      preremove: deploy/linux/scripts/pre-remove.sh
+    empty_folders:
+      - /var/cerbos/policies
+    contents:
+      - src: deploy/linux/conf/cerbos.yaml
+        dst: /etc/cerbos.yaml
+        type: config|noreplace
+      - src: deploy/linux/unit/cerbos.service
+        dst: /etc/systemd/system/cerbos.service
+dockers:
+  - image_templates:
+      - "ghcr.io/cerbos/cerbos:{{ .Version }}-amd64"
+      - "ghcr.io/cerbos/cerbos:latest-amd64"
+      - "ghcr.io/cerbos/cerbos:dev-amd64"
+    goarch: amd64
+    use: buildx
+    extra_files:
+      - conf.default.yaml
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/amd64"
+
+  - image_templates:
+      - "ghcr.io/cerbos/cerbos:{{ .Version }}-arm64"
+      - "ghcr.io/cerbos/cerbos:latest-arm64"
+      - "ghcr.io/cerbos/cerbos:dev-arm64"
+    goarch: arm64
+    use: buildx
+    extra_files:
+      - conf.default.yaml
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/arm64"
+docker_manifests:
+  - name_template: "ghcr.io/cerbos/cerbos:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/cerbos/cerbos:{{ .Version }}-amd64"
+      - "ghcr.io/cerbos/cerbos:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/cerbos/cerbos:latest"
+    image_templates:
+      - "ghcr.io/cerbos/cerbos:latest-amd64"
+      - "ghcr.io/cerbos/cerbos:latest-arm64"
+  - name_template: "ghcr.io/cerbos/cerbos:dev"
+    image_templates:
+      - "ghcr.io/cerbos/cerbos:dev-amd64"
+      - "ghcr.io/cerbos/cerbos:dev-arm64"
+brews:
+  - tap:
+      owner: cerbos
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_GITHUB_TOKEN }}"
+    homepage: "https://cerbos.dev"
+    description: "Cerbos is the open core, language-agnostic, scalable authorization solution that makes user permissions and authorization simple to implement and manage by writing context-aware access control policies for your application resources."
+    license: "Apache-2.0"
+checksum:
+  name_template: 'checksums.txt'
+release:
+  header: |-
+    Cerbos {{ .Version }}
+    ---------------------
+    
+    View the full release notes at https://docs.cerbos.dev/cerbos/latest/releases/v{{ .Version }}.html 
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^ci:'
+      - '^chore'
+      - '^docs:'
+      - '^test:'

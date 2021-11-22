@@ -9,7 +9,22 @@ Painless access control for cloud-native applications
 
 Cerbos helps you super-charge your authorization implementation by writing context-aware access control policies for your application resources. Author access rules using an intuitive YAML configuration language, use your Git-ops infrastructure to test and deploy them and, make simple API requests to the Cerbos PDP to evaluate the policies and make dynamic access decisions.
 
-See https://docs.cerbos.dev for full Cerbos documentation.
+
+* [Try online with the Cerbos playground](https://play.cerbos.dev)
+* [Explore demo repositories](https://github.com/cerbos)
+* [Read the documentation](https://docs.cerbos.dev)
+* [Subscribe to our newsletter](https://cerbos.dev/subscribe)
+* [Join the community on Slack](http://go.cerbos.io/slack)
+* Install Cerbos
+    * [Container](https://docs.cerbos.dev/cerbos/latest/installation/container.html)
+    * [Binary](https://docs.cerbos.dev/cerbos/latest/installation/binary.html)
+    * [Helm Chart](https://docs.cerbos.dev/cerbos/latest/installation/helm.html)
+* Get the client SDKs
+    * [Go](client/README.md)
+    * [Java](https://github.com/cerbos/cerbos-sdk-java)
+    * [NodeJS](https://github.com/cerbos/cerbos-sdk-node)
+* [Contribute](CONTRIBUTING.md)
+
 
 How it works
 ------------
@@ -116,16 +131,8 @@ EOF
 }
 ```
 
-Client SDKs
+
+Stargazers
 -----------
+[![Stargazers repo roster for cerbos/cerbos](https://reporoster.com/stars/cerbos/cerbos)](https://github.com/cerbos/cerbos)
 
-- [Go](client/README.md)
-- [NodeJS](https://github.com/cerbos/cerbos-sdk-node)
-
-More Information
-----------------
-
-* [Cerbos website](https://cerbos.dev)
-* [Cerbos docs](https://docs.cerbos.dev)
-* [Demo repositories on GitHub](https://github.com/cerbos)
-* [Slack community](http://go.cerbos.io/slack)

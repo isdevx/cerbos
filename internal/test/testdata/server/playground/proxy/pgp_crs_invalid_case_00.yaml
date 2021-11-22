@@ -1,0 +1,51 @@
+---
+description: "Invalid CheckResourceSet request"
+wantStatus:
+  httpStatusCode: 400
+  grpcStatusCode: 3
+wantError: true
+playgroundProxy:
+  input: {
+    "playgroundId": "test",
+    "policyFiles": [
+      {
+        "fileName": "derived_roles_01.yaml",
+        "contents": "{{ .Files.Get `store/derived_roles/derived_roles_01.yaml` | base64encode }}",
+      },
+      {
+        "fileName": "derived_roles_02.yaml",
+        "contents": "{{ .Files.Get `store/derived_roles/derived_roles_02.yaml` | base64encode }}",
+      },
+      {
+        "fileName": "resource.yaml",
+        "contents": "{{ .Files.Get `store/resource_policies/policy_01.yaml` | base64encode }}"
+      },
+      {
+        "fileName": "policy_02.yaml",
+        "contents": "{{ .Files.Get `store/principal_policies/policy_01.yaml` | base64encode }}",
+      }
+    ],
+    "checkResourceSet": {
+      "requestId": "test",
+      "actions": [
+        "view:public",
+        "approve"
+      ],
+      "principal": {
+        "id": "john",
+        "policyVersion": "20210210",
+        "roles": [
+          "employee"
+        ],
+        "attr": {
+          "department": "marketing",
+          "geography": "GB",
+          "team": "design"
+        }
+      },
+      "resource": {
+        "kind": "leave_request",
+        "policyVersion": "20210210",
+      }
+    }
+  }

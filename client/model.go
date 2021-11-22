@@ -10,11 +10,13 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"time"
 
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	auditv1 "github.com/cerbos/cerbos/api/genpb/cerbos/audit/v1"
 	effectv1 "github.com/cerbos/cerbos/api/genpb/cerbos/effect/v1"
 	enginev1 "github.com/cerbos/cerbos/api/genpb/cerbos/engine/v1"
 	policyv1 "github.com/cerbos/cerbos/api/genpb/cerbos/policy/v1"
@@ -348,6 +350,7 @@ func (crbr *CheckResourceBatchResponse) String() string {
 	return protojson.Format(crbr.CheckResourceBatchResponse)
 }
 
+// TODO (cell) replace with util.ToStructPB.
 func toStructPB(v interface{}) (*structpb.Value, error) {
 	val, err := structpb.NewValue(v)
 	if err == nil {
@@ -843,4 +846,99 @@ func (ml matchList) build() *policyv1.Match {
 	}
 
 	return ml.cons(exprList)
+}
+
+type ServerInfo struct {
+	*responsev1.ServerInfoResponse
+}
+
+type AuditLogType uint8
+
+const (
+	AccessLogs AuditLogType = iota
+	DecisionLogs
+)
+
+// AuditLogOptions is used to filter audit logs.
+type AuditLogOptions struct {
+	Type      AuditLogType
+	Tail      uint32
+	StartTime time.Time
+	EndTime   time.Time
+	Lookup    string
+}
+
+type AuditLogEntry struct {
+	accessLog   *auditv1.AccessLogEntry
+	decisionLog *auditv1.DecisionLogEntry
+	err         error
+}
+
+func (e *AuditLogEntry) AccessLog() (*auditv1.AccessLogEntry, error) {
+	return e.accessLog, e.err
+}
+
+func (e *AuditLogEntry) DecisionLog() (*auditv1.DecisionLogEntry, error) {
+	return e.decisionLog, e.err
+}
+
+type ListPoliciesSortingType uint8
+
+const (
+	SortByName    ListPoliciesSortingType = 1
+	SortByVersion ListPoliciesSortingType = 2
+)
+
+type sortingOptions struct {
+	descending bool
+	field      ListPoliciesSortingType
+}
+
+type policyListOptions struct {
+	filters        []*requestv1.ListPoliciesRequest_Filter
+	sortingOptions *sortingOptions
+}
+
+// ListOpt is used to specify options for ListPolicies method.
+type ListOpt func(*policyListOptions)
+
+// FieldEqualsFilter adds a exact match filter for the field.
+func FieldEqualsFilter(path, value string) ListOpt {
+	return func(pf *policyListOptions) {
+		pf.filters = append(pf.filters, &requestv1.ListPoliciesRequest_Filter{
+			Type:      requestv1.ListPoliciesRequest_MATCH_TYPE_EXACT,
+			FieldPath: path,
+			Value:     value,
+		})
+	}
+}
+
+// FieldEqualsFilter adds a regex match filter for the field.
+func FieldMatchesFilter(path, value string) ListOpt {
+	return func(pf *policyListOptions) {
+		pf.filters = append(pf.filters, &requestv1.ListPoliciesRequest_Filter{
+			Type:      requestv1.ListPoliciesRequest_MATCH_TYPE_WILDCARD,
+			FieldPath: path,
+			Value:     value,
+		})
+	}
+}
+
+// SortAscending enables sorting the policies by ascending order with given field.
+func SortAscending(field ListPoliciesSortingType) ListOpt {
+	return func(pf *policyListOptions) {
+		pf.sortingOptions = &sortingOptions{
+			field: field,
+		}
+	}
+}
+
+// SortDescending enables sorting the policies by descending order with given field.
+func SortDescending(field ListPoliciesSortingType) ListOpt {
+	return func(pf *policyListOptions) {
+		pf.sortingOptions = &sortingOptions{
+			descending: true,
+			field:      field,
+		}
+	}
 }

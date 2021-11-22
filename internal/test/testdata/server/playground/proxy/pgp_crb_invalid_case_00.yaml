@@ -1,0 +1,88 @@
+---
+description: "Invalid CheckResourceBatch request"
+wantStatus:
+  httpStatusCode: 400
+  grpcStatusCode: 3
+wantError: true
+playgroundProxy:
+  input: {
+    "playgroundId": "test",
+    "policyFiles": [
+      {
+        "fileName": "derived_roles_01.yaml",
+        "contents": "{{ .Files.Get `store/derived_roles/derived_roles_01.yaml` | base64encode }}",
+      },
+      {
+        "fileName": "derived_roles_02.yaml",
+        "contents": "{{ .Files.Get `store/derived_roles/derived_roles_02.yaml` | base64encode }}",
+      },
+      {
+        "fileName": "policy_05.yaml",
+        "contents": "{{ .Files.Get `store/resource_policies/policy_01.yaml` | base64encode }}",
+      },
+      {
+        "fileName": "principal.yaml",
+        "contents": "{{ .Files.Get `store/principal_policies/policy_01.yaml` | base64encode }}",
+      }
+    ],
+    "checkResourceBatch": {
+      "requestId": "test",
+      "resources": [
+        {
+          "actions": [
+            "view:public",
+            "approve"
+          ],
+          "resource": {
+            "kind": "leave_request",
+            "policyVersion": "20210210",
+            "id": "XX125",
+            "attr": {
+              "department": "marketing",
+              "geography": "GB",
+              "id": "XX125",
+              "owner": "john",
+              "team": "design"
+            }
+          }
+        },
+        {
+          "actions": [
+            "view:public",
+            "approve"
+          ],
+          "resource": {
+            "kind": "leave_request",
+            "policyVersion": "20210210",
+            "id": "YY125",
+            "attr": {
+              "department": "engineering",
+              "geography": "GB",
+              "id": "YY125",
+              "owner": "jenny",
+              "team": "backend"
+            }
+          }
+        },
+        {
+          "actions": [
+            "view:public",
+            "delete",
+            "edit"
+          ],
+          "resource": {
+            "kind": "salary_record",
+            "policyVersion": "20210210",
+            "id": "YY525",
+            "attr": {
+              "department": "engineering",
+              "geography": "GB",
+              "id": "YY525",
+              "owner": "mark",
+              "team": "backend"
+            }
+          }
+        }
+      ]
+    }
+  }

@@ -23,7 +23,7 @@ import (
 	"github.com/cerbos/cerbos/internal/namer"
 	"github.com/cerbos/cerbos/internal/policy"
 	"github.com/cerbos/cerbos/internal/storage"
-	"github.com/cerbos/cerbos/internal/storage/disk/index"
+	"github.com/cerbos/cerbos/internal/storage/index"
 	"github.com/cerbos/cerbos/internal/test"
 	"github.com/cerbos/cerbos/internal/test/mocks"
 )
@@ -110,6 +110,7 @@ func TestUpdateStore(t *testing.T) {
 
 	rng := rand.New(rand.NewSource(time.Now().Unix())) //nolint:gosec
 	numPolicySets := 20
+	deletedFilesetNumber := 0
 
 	_ = createGitRepo(t, sourceGitDir, numPolicySets)
 
@@ -241,7 +242,8 @@ func TestUpdateStore(t *testing.T) {
 		}, nil)
 
 		checkEvents := storage.TestSubscription(store)
-		pset := genPolicySet(rng.Intn(numPolicySets))
+		deletedFilesetNumber = rng.Intn(numPolicySets)
+		pset := genPolicySet(deletedFilesetNumber)
 
 		require.NoError(t, commitToGitRepo(sourceGitDir, "Delete policy", func(wt *git.Worktree) error {
 			for file := range pset {
@@ -278,7 +280,14 @@ func TestUpdateStore(t *testing.T) {
 		}, nil)
 
 		checkEvents := storage.TestSubscription(store)
-		pset := genPolicySet(rng.Intn(numPolicySets))
+		moveFilesetNumber := rng.Intn(numPolicySets)
+		for {
+			if moveFilesetNumber != deletedFilesetNumber {
+				break
+			}
+			moveFilesetNumber = rng.Intn(numPolicySets)
+		}
+		pset := genPolicySet(moveFilesetNumber)
 
 		require.NoError(t, commitToGitRepo(sourceGitDir, "Move policy out", func(wt *git.Worktree) error {
 			for file := range pset {
@@ -288,7 +297,6 @@ func TestUpdateStore(t *testing.T) {
 					return err
 				}
 			}
-
 			return nil
 		}))
 
@@ -343,7 +351,6 @@ func mkConf(t *testing.T, gitRepo, checkoutDir string) *Conf {
 		CheckoutDir: checkoutDir,
 		Branch:      "policies",
 		SubDir:      "policies",
-		ScratchDir:  t.TempDir(),
 	}
 }
 
