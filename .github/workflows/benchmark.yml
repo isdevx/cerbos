@@ -29,7 +29,7 @@ jobs:
         run:  go mod tidy -compat=1.17 && go test -tags tests -bench 'Benchmark' ./... | tee benchmark.txt
 
       - name: Store benchmark result
-        uses: isdevx/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@master
         with:
           name: Go Benchmark
           tool: 'go'
