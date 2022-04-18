@@ -105,7 +105,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Helm
-        uses: azure/setup-helm@v1
+        uses: azure/setup-helm@v2.1
 
       - name: Package Helm chart
         run: helm package -d deploy/out deploy/charts/cerbos
